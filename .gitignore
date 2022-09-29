@@ -1,0 +1,29 @@
+# PyCharm
+.idea/
+
+# Visual Studio Code.
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+# External Git repositories.
+objectDetection/Tensorflow/addons/labelImg
+objectDetection/Tensorflow/models
+
+# Jupyter notebook
+objectDetection/.ipynb_checkpoints
+
+# RECORD files
+objectDetection/Tensorflow/workspace/annotations/train.record
+objectDetection/Tensorflow/workspace/annotations/test.record
+
+# Node modules
+web/node_modules
+
+#pycache
+objectDetection/Tensorflow/scripts/__pycache__
+web/__pycache__

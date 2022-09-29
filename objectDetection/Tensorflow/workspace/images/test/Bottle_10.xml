@@ -1,0 +1,26 @@
+<annotation>
+	<folder>test</folder>
+	<filename>Bottle_10.png</filename>
+	<path>H:\Documenten\1. Zuyd Hogeschool\Leerjaar 3\BD02. Artificial Intelligence\1. Casus\Groep11_BD02-3\objectDetection\Tensorflow\workspace\images\test\Bottle_10.png</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>480</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>bottle</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>131</xmin>
+			<ymin>195</ymin>
+			<xmax>200</xmax>
+			<ymax>445</ymax>
+		</bndbox>
+	</object>
+</annotation>

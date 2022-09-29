@@ -1,0 +1,24 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "postcss static/src/main.css -o static/css/main.css",
+    "watch": "nodemon -q -e html,css --watch static/src --watch templates -x \\\"npm run build\\\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@tailwindcss/forms": "^0.3.2",
+    "@tensorflow/tfjs": "^3.3.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.2.5",
+    "nodemon": "^2.0.7",
+    "postcss": "^8.2.8",
+    "postcss-cli": "^8.3.1",
+    "tailwindcss": "^2.0.4"
+  }
+}

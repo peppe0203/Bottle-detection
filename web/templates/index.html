@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Data Intelligence: Bottle detection</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/main.css') }}">
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet" />
+</head>
+<body class="text-gray-700" style="font-family: 'Inter', 'sans-serif'">
+    <div id="app">
+        <div class="absolute h-screen w-screen">
+            <div v-show="modalOpen">
+                <div class="absolute z-40 h-screen w-screen bg-black opacity-50" @click="modalOpen = false"></div>
+                <div class="absolute z-50 w-10/12" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                    <div class="bg-white  px-4 py-4 rounded-lg flex space-x-5">
+                        <div class="w-1/2 shadow border rounded-sm overflow-hidden">
+                            <img class="h-full w-full object-cover" src="{{ url_for('label_feed') }}" v-show="labelOpen">
+                            <img class="h-full w-full object-cover" src="{{ url_for('liquid_feed') }}" v-show="!labelOpen">
+                        </div>
+
+                        <div class="w-1/2">
+                            <div class="mb-2 mt-2">
+                                <h2 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-blue-300 mb-1">Settings:</h2>
+                            </div>
+
+                            <!-- Switch settings -->
+                            <div class="mb-3 mt-2">
+                                <h3 class="inline-block text-2xl font-bold text-blue-500 mb-1 cursor-pointer px-2 py-1 rounded-lg bg-gray-200" @click="labelOpen = true" :class="labelOpen ? 'bg-gray-400 shadow-2xl' : ''">Label</h3>
+                                <h3 class="ml-3 inline-block text-2xl font-bold text-blue-500 mb-1 cursor-pointer px-2 py-1 rounded-lg bg-gray-200" @click="labelOpen = false" :class="!labelOpen ? 'bg-gray-400 shadow-2xl' : ''">Liquid</h3>
+                            </div>
+
+                            <!-- Sliders for label -->
+                            <div v-show="labelOpen">
+                                <div class="flex items-center mb-2">
+                                    <p class="w-1/4">The low Hue</p>
+                                    <div class="w-3/4">
+                                        <input class="w-2/3" type="range" v-model="sliders.label.hue[0]" @change="setLabelColor(false)" min="0" max="255" step="1">
+                                        <span class="ml-5 italic" v-text="sliders.label.hue[0]"></span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center mb-2">
+                                    <p class="w-1/4">The high Hue:</p>
+                                    <div class="w-3/4">
+                                        <input class="w-2/3" type="range" v-model="sliders.label.hue[1]" @change="setLabelColor(false)" min="0" max="255" step="1">
+                                        <span class="ml-5 italic" v-text="sliders.label.hue[1]"></span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center mb-2">
+                                    <p class="w-1/4">The low Sat:</p>
+                                    <div class="w-3/4">
+                                        <input class="w-2/3" type="range" v-model="sliders.label.sat[0]" @change="setLabelColor(false)" min="0" max="255" step="1">
+                                        <span class="ml-5 italic" v-text="sliders.label.sat[0]"></span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center mb-2">
+                                    <p class="w-1/4">The high Sat:</p>
+                                    <div class="w-3/4">
+                                        <input class="w-2/3" type="range" v-model="sliders.label.sat[1]" @change="setLabelColor(false)" min="0" max="255" step="1">
+                                        <span class="ml-5 italic" v-text="sliders.label.sat[1]"></span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center mb-2">
+                                    <p class="w-1/4">The low Val:</p>
+                                    <div class="w-3/4">
+                                        <input class="w-2/3" type="range" v-model="sliders.label.val[0]" @change="setLabelColor(false)" min="0" max="255" step="1">
+                                        <span class="ml-5 italic" v-text="sliders.label.val[0]"></span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center mb-2">
+                                    <p class="w-1/4">The high Val:</p>
+                                    <div class="w-3/4">
+                                        <input class="w-2/3" type="range" v-model="sliders.label.val[1]" @change="setLabelColor(false)" min="0" max="255" step="1">
+                                        <span class="ml-5 italic" v-text="sliders.label.val[1]"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Save button for sliders -->
+                                <div class="mb-5 mt-4">
+                                    <button class="transform bg-gray-300 shadow-xl rounded-lg pl-2 pr-2 text-black hover:text-green-500 hover:scale-105" @click="setLabelColor(true)">Save slider settings label</button>
+                                </div>
+
+                                 <!-- Evaluation values for label -->
+                                <div>
+                                    <div class="flex">
+                                        <div class="w-1/2 flex items-center mb-2">
+                                            <p class="flex-shrink-0 mr-2">Allowed deviation:</p>
+                                            <input class="w-24" v-model="evaluation.label.deviation" min="0" max="1" step="0.1">
+                                        </div>
+                                        <div class="flex items-center mb-2">
+                                            <p class="flex-shrink-0 mr-2">Correct height:</p>
+                                            <input class="w-24" v-model="evaluation.label.height" min="0" max="1000" step="1">
+                                        </div>
+                                    </div>
+                                    <div class="flex">
+                                        <div class="w-1/2 flex items-center mb-2">
+                                            <p class="flex-shrink-0 mr-5">Bottom position:</p>
+                                            <input class="w-24" v-model="evaluation.label.bottom_position" min="0" max="1000" step="1">
+                                        </div>
+                                        <div class="flex items-center mb-2">
+                                            <p class="flex-shrink-0 mr-6">Top position:</p>
+                                            <input class="w-24" v-model="evaluation.label.top_position" min="0" max="1000" step="1">
+                                        </div>
+                                    </div>
+
+                                    <!-- Save button for evaluation of label -->
+                                    <div class="mb-5 mt-4">
+                                        <button class="transform bg-gray-300 shadow-xl rounded-lg pl-2 pr-2 text-black hover:text-green-500 hover:scale-105" @click="setEvaluationConfig">Save evaluation settings</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sliders Liquid -->
+                            <div v-show="!labelOpen">
+                                <div class="flex items-center mb-2">
+                                    <p class="w-1/4">The low Hue</p>
+                                    <div class="w-3/4">
+                                        <input class="w-2/3" type="range" v-model="sliders.liquid.hue[0]" @change="setLiquidColor(false)" min="0" max="255" step="1">
+                                        <span class="ml-5 italic" v-text="sliders.liquid.hue[0]"></span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center mb-2">
+                                    <p class="w-1/4">The high Hue:</p>
+                                    <div class="w-3/4">
+                                        <input class="w-2/3" type="range" v-model="sliders.liquid.hue[1]" @change="setLiquidColor(false)" min="0" max="255" step="1">
+                                        <span class="ml-5 italic" v-text="sliders.liquid.hue[1]"></span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center mb-2">
+                                    <p class="w-1/4">The low Sat:</p>
+                                    <div class="w-3/4">
+                                        <input class="w-2/3" type="range" v-model="sliders.liquid.sat[0]" @change="setLiquidColor(false)" min="0" max="255" step="1">
+                                        <span class="ml-5 italic" v-text="sliders.liquid.sat[0]"></span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center mb-2">
+                                    <p class="w-1/4">The high Sat:</p>
+                                    <div class="w-3/4">
+                                        <input class="w-2/3" type="range" v-model="sliders.liquid.sat[1]" @change="setLiquidColor(false)" min="0" max="255" step="1">
+                                        <span class="ml-5 italic" v-text="sliders.liquid.sat[1]"></span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center mb-2">
+                                    <p class="w-1/4">The low Val:</p>
+                                    <div class="w-3/4">
+                                        <input class="w-2/3" type="range" v-model="sliders.liquid.val[0]" @change="setLiquidColor(false)" min="0" max="255" step="1">
+                                        <span class="ml-5 italic" v-text="sliders.liquid.val[0]"></span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center mb-2">
+                                    <p class="w-1/4">The high Val:</p>
+                                    <div class="w-3/4">
+                                        <input class="w-2/3" type="range" v-model="sliders.liquid.val[1]" @change="setLiquidColor(false)" min="0" max="255" step="1">
+                                        <span class="ml-5 italic" v-text="sliders.liquid.val[1]"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Save button for sliders -->
+                                <div class="mb-5 mt-4">
+                                    <button class="transform bg-gray-300 shadow-xl rounded-lg pl-2 pr-2 text-black hover:text-green-500 hover:scale-105" @click="setLiquidColor(true)">Save slider settings liquid</button>
+                                </div>
+
+                                <div>
+                                    <div class="flex">
+                                        <div class="w-1/2 flex items-center mb-2">
+                                            <p class="flex-shrink-0 mr-2">Allowed deviation:</p>
+                                            <input class="w-24" v-model="evaluation.liquid.deviation" min="0" max="0.1" step="0.1">
+                                        </div>
+                                    </div>
+                                    <div class="flex">
+                                        <div class="flex items-center mb-2">
+                                            <p class="flex-shrink-0 mr-2">Correct fill:</p>
+                                            <input class="ml-14 w-24" v-model="evaluation.liquid.fill" min="0" max="1000" step="1">
+                                        </div>
+                                    </div>
+
+                                    <!-- Save button for evaluation of label -->
+                                    <div class="mb-5 mt-4">
+                                        <button class="transform bg-gray-300 shadow-xl rounded-lg pl-2 pr-2 text-black hover:text-green-500 hover:scale-105" @click="setEvaluationConfig">Save evaluation settings</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center mb-2">
+                                <p class="w-1/4">Model threshold:</p>
+                                <input class="w-24" v-model="model_threshold" min="0" max="1" step="0.01" v-text="model_threshold">
+                            </div>
+
+                            <!-- Save button for tf config settings -->
+                            <div class="mb-5 mt-4">
+                                <button class="transform bg-gray-300 shadow-xl rounded-lg pl-2 pr-2 text-black hover:text-green-500 hover:scale-105" @click="setTFConfig">Save tf settings</button>
+                            </div>
+
+                            <!-- Debug mode -->
+                            <div class="flex items-center mb-2">
+                                <p class="w-1/4">Debugging mode:</p>
+                                <input @change="setDebugMode" type="checkbox" v-model="debug_mode" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-offset-0 focus:ring-indigo-200 focus:ring-opacity-50 cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="relative p-8 mx-auto">
+            <div class="text-center mb-4">
+                <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-blue-600 mb-1">Bottle detection</h1>
+                <p class="text-sm ">Created by: <span class="font-medium italic">Justin Bos</span>, <span class="font-medium italic">Cédric Cortenraede</span>, <span class="font-medium italic">Giuseppe Collura</span> and <span class="font-medium italic">Rob de Jonge</span>.</p>
+            </div>
+        </div>
+
+        <div class="mx-auto px-8 flex max-w-6xl space-x-8  mb-4">
+            <!-- Webcam feed -->
+            <div class="w-1/2 text-gray-600 bg-white shadow border rounded-sm overflow-hidden">
+    <!--            <svg class="absolute opacity-25" fill="none" viewBox="0 0 24 24" stroke="currentColor">-->
+    <!--                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />-->
+    <!--            </svg>-->
+                <img class="w-full" src="{{ url_for('feed') }}">
+            </div>
+
+            <!-- Results from feed -->
+            <div class="relative w-1/2 p-4 bg-white shadow border  rounded-sm">
+                <!-- give default values or the detected values -->
+                <h2 class="text-xl text-gray-900 font-medium mb-4">Results</h2>
+                <div v-if="!results.length">
+                    <h3 class="text-lg text-gray-700 font-medium">#No bottles</h3>
+                    <p class="text-sm">  Label: <input readonly type="text" class="w-72 text-red-600 pointer-event-none select-none mt-4 ml-1 border border-gray-300 bg-gray-100 rounded-lg shadow-lg" value="No detection"></p>
+                    <p class="text-sm">  Liquid: <input readonly type="text" class="w-72 text-red-600 pointer-event-none select-none mt-4 border border-gray-300 bg-gray-100 rounded-lg shadow-lg" value="No detection"></p>
+                </div>
+                <div v-else v-for="result in results" class="mb-5">
+                    <h3 class="text-lg text-gray-700 font-medium" v-text="result.bottle"></h3>
+                    <p class="text-sm">  Label: <input readonly type="text" v-model="result.results.label" :class="(result.results.label === 'Correct') ? 'text-green-600' : 'text-red-600'" class="w-72 pointer-event-none select-none mt-4 ml-1 border border-gray-300 bg-gray-100 rounded-lg shadow-lg"></p>
+                    <p class="text-sm">  Liquid: <input readonly type="text" v-model="result.results.liquid" :class="(result.results.liquid === 'Correct') ? 'text-green-600' : 'text-red-600'" class="w-72 pointer-event-none select-none mt-4 border border-gray-300 bg-gray-100 rounded-lg shadow-lg"></p>
+                </div>
+
+                <a @click="modalOpen = true" class="absolute right-2 top-2 p-2 bg-gray-100 hover:bg-gray-300 rounded-full focus:outline-none focus:bg-gray-300">
+                    <svg class="w-8 text-indigo-500 hover:text-purple-600 opacity-70 rounded-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+        <div class="divide-y-4 divide-black divide-opacity-25 pl-80 pr-80 pt-6">
+            <span></span>
+            <div class="text-xs text-gray-600 italic text-center pt-1">
+                &copy Casus groep 11 - Zuyd Hogeschool, Data Intelligence
+            </div>
+        </div>
+    </div>
+  
+    <!-- VueJS and Axios scripts --->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+
+    <script type="text/javascript">
+        Vue.config.devtools = true
+
+        var app = new Vue({
+            delimiters: ['[[', ']]'],
+            el: "#app",
+            data: {
+                modalOpen: false,
+                labelOpen: true,
+                results: [],
+                sliders: {
+                    label: {
+                        hue: ['{{ colors.label.hue.min }}', '{{ colors.label.hue.max }}'],
+                        sat: ['{{ colors.label.sat.min }}', '{{ colors.label.sat.max }}'],
+                        val: ['{{ colors.label.val.min }}', '{{ colors.label.val.max }}']
+                    },
+                    liquid: {
+                        hue: ['{{ colors.liquid.hue.min }}', '{{ colors.liquid.hue.max }}'],
+                        sat: ['{{ colors.liquid.sat.min }}', '{{ colors.liquid.sat.max }}'],
+                        val: ['{{ colors.liquid.val.min }}', '{{ colors.liquid.val.max }}']
+                    }
+                },
+                evaluation: {
+                    label: {
+                        deviation: '{{ config.detections.evaluation.label.deviation }}',
+                        height: '{{ config.detections.evaluation.label.height }}',
+                        top_position: '{{ config.detections.evaluation.label.top_position }}',
+                        bottom_position: '{{ config.detections.evaluation.label.bottom_position }}'
+                    },
+                    liquid: {
+                        deviation: '{{ config.detections.evaluation.liquid.deviation }}',
+                        fill: '{{ config.detections.evaluation.liquid.fill }}'
+                    }
+                },
+                model_threshold: '{{ config.detections.tf.threshold }}',
+                debug_mode: '{{ config.detections.debugging_mode }}'
+            },
+
+            methods: {
+                getResult: function() {
+                    axios.get("/feed/results").then(response => {
+                        this.results = response.data
+                    })
+                },
+
+                setLabelColor: function(isPermanent) {
+                    axios.post("/config/label", {
+                        configuration : this.sliders.label,
+                        isPermanent: isPermanent
+                    })
+                },
+
+                setLiquidColor: function(isPermanent) {
+                    axios.post("/config/liquid", {
+                        configuration: this.sliders.liquid,
+                        isPermanent: isPermanent
+                    })
+                },
+
+                setTFConfig: function() {
+                    axios.post("/config/tensorflow", {
+                        threshold: this.model_threshold
+                    })
+                },
+
+                setEvaluationConfig: function() {
+                    axios.post("/config/evaluation", {
+                        label: this.evaluation.label,
+                        liquid: this.evaluation.liquid
+                    })
+                },
+
+                setDebugMode: function() {
+                    axios.post("/config/debug", {
+                        debug_mode: this.debug_mode
+                    })
+                }
+            },
+
+            created() {
+                <!-- TODO reduce the number of calls per x time on the final version -->
+                setInterval(() => this.getResult(), 1000)
+            }
+        })
+
+    </script>
+</body>
+</html>
